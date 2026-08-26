@@ -352,6 +352,18 @@ assert.ok(providerSelect, 'provider select must exist')
 const providerOptions = (providerSelect.props.children || []).filter(Boolean)
 const optionTexts = providerOptions.map(node => node.props.value)
 assert.deepEqual(optionTexts.sort(), ['nous', 'openrouter'])
+for (const option of providerOptions) {
+  assert.equal(
+    option.props.style?.backgroundColor,
+    'var(--ui-bg-elevated)',
+    'provider options must inherit the active Hermes popup surface'
+  )
+  assert.equal(
+    option.props.style?.color,
+    'var(--ui-text-primary)',
+    'provider options must use readable active-theme text'
+  )
+}
 
 // Model select defaults to the active model of the default provider and
 // never shows host-only fields anywhere in the tree.
@@ -368,8 +380,19 @@ const modelSelectAfter = selectByPlaceholder(tree, 'model-select')
 assert.ok(modelSelectAfter, 'model select must exist')
 const modelOptions = (modelSelectAfter.props.children || [])
   .filter(Boolean)
-  .map(node => node.props.value)
-assert.deepEqual(modelOptions, ['openai/gpt-4o-mini'])
+assert.deepEqual(modelOptions.map(node => node.props.value), ['openai/gpt-4o-mini'])
+for (const option of modelOptions) {
+  assert.equal(
+    option.props.style?.backgroundColor,
+    'var(--ui-bg-elevated)',
+    'model options must inherit the active Hermes popup surface'
+  )
+  assert.equal(
+    option.props.style?.color,
+    'var(--ui-text-primary)',
+    'model options must use readable active-theme text'
+  )
+}
 
 modelSelectAfter.props.onChange({ target: { value: 'openai/gpt-4o-mini' } })
 findByType(tree, 'textarea')[0].props.onChange({ target: { value: 'T005_SELECT' } })
