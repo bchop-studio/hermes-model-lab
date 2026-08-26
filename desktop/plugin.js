@@ -4,6 +4,10 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 const REQUEST_TIMEOUT_MS = 70000
 const SAFE_ERROR_MESSAGE = 'Something went wrong. Try again.'
 const RATE_LIMIT_MESSAGE = 'Rate limited. Wait a moment and try again.'
+const THEMED_OPTION_STYLE = {
+  backgroundColor: 'var(--ui-bg-elevated)',
+  color: 'var(--ui-text-primary)'
+}
 
 function formatElapsed(ms) {
   if (typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0) return null
@@ -178,7 +182,11 @@ function ModelLabPane({ callbacks }) {
               })
             },
             children: providers.map(p =>
-              jsx('option', { key: p.slug, value: p.slug, children: p.label }, p.slug)
+              jsx(
+                'option',
+                { key: p.slug, value: p.slug, style: THEMED_OPTION_STYLE, children: p.label },
+                p.slug
+              )
             )
           }),
           jsx('select', {
@@ -189,7 +197,7 @@ function ModelLabPane({ callbacks }) {
             onChange: event =>
               setSelection(current => ({ ...current, model: event.target.value })),
             children: providerModels.map(m =>
-              jsx('option', { key: m, value: m, children: m }, m)
+              jsx('option', { key: m, value: m, style: THEMED_OPTION_STYLE, children: m }, m)
             )
           })
         ]
