@@ -1,5 +1,7 @@
 # Hermes Model Lab
 
+![Hermes Model Lab cover](cover.png)
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-desktop%20runner%20validated-2ea44f.svg)
 
@@ -77,6 +79,14 @@ Isolation limits: lab runs never write to chat history, memory, skills, cron, pr
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change.
 
-## License
+---
 
-MIT © BChop
+MIT. Do whatever you want with these.
+
+Built by [@BChopLXXXII](https://x.com/BChopLXXXII)
+
+Built for BUILDERS who just want their AI to feel less... corporate.
+
+Ship it. 🚀
+
+If this helped, ⭐ the repo — it helps others find it.
