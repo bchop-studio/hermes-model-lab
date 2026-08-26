@@ -1,0 +1,10 @@
+{
+  "name": "hermes-model-lab",
+  "label": "Model Lab",
+  "version": "0.1.0",
+  "description": "Stateless model playground for Hermes Desktop",
+  "tab": {
+    "hidden": true
+  },
+  "api": "plugin_api.py"
+}
