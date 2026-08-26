@@ -16,4 +16,4 @@ Every change must include the command used to test it and the real result. Safet
 
 ## Source of truth
 
-The public V1 capability table lives in [README.md](README.md). Until the feasibility spike passes, the project remains in planning status.
+The public V1 capability table lives in [README.md](README.md). T001 proved the stateless bridge and every V1 task is verified, so the project is release-ready: local release artifacts build deterministically via `scripts/build_release.py`, while the signed tag and GitHub release wait on maintainer approval.

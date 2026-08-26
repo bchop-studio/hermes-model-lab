@@ -1,0 +1,8 @@
+name: hermes-model-lab
+version: 0.1.0
+description: Stateless model playground for Hermes Desktop
+license: MIT
+homepage: https://github.com/bchop-studio/hermes-model-lab
+capabilities:
+  - llm.provider_override
+  - llm.model_override
