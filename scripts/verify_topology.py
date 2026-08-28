@@ -75,14 +75,15 @@ def _hash_file(path: Path) -> str:
 # older archives; this replaces the builder's old single-archive exclusion.
 NON_SHIPPED_DIRS = {"artifacts", ".git", "__pycache__", ".pytest_cache", ".ruff_cache", "node_modules", ".venv", ".dfg", "spikes"}
 
-# Internal local files excluded from the shippable set (copy, parity,
-# install plan, uninstall plan). Public docs under docs/ stay shippable.
+# Repository-only and internal local files excluded from the installable
+# package set (copy, parity, install plan, uninstall plan).
 NON_SHIPPED_FILES = {
     ".hermes.md",
     "AGENTS.md",
     "PRD.md",
     ".env.example",
     ".gitignore",
+    "cover.png",
     "docs/BUILDLOG.md",
     "docs/taskchecklist.json",
 }

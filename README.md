@@ -9,11 +9,11 @@ A stateless model playground for Hermes Desktop.
 
 Hermes Model Lab is an opt-in Desktop plugin for testing prompts against configured models without turning each run into a Hermes conversation. Lab runs must not write to Hermes chat history, memory, skills, project files, or model settings.
 
-## Planned V1
+## Version 0.1.0
 
-| Capability | V1 |
+| Capability | 0.1.0 |
 |---|---|
-| Right-side Hermes Desktop pane | Shell validated |
+| Right-side Hermes Desktop pane | Validated |
 | Single-prompt model runs | Backend + Desktop validated |
 | Provider and model selection | Backend + Desktop validated |
 | Response time and token usage | Backend + Desktop validated |
@@ -65,7 +65,7 @@ Install the backend half: copy that folder into your Hermes plugins directory (`
 
 Install the Desktop half (Windows): copy the same folder's contents to `%LOCALAPPDATA%\hermes\desktop-plugins\hermes-model-lab\`, so that `plugin.js` sits directly inside that folder.
 
-Install never overwrites: if any target file already exists, the installer refuses instead of replacing a user-owned file.
+Do not overwrite an existing installation. Copy into empty target folders only, and remove an older Model Lab installation before installing this release.
 
 Use: open Hermes Desktop, enable Model Lab, type one prompt, pick an allowed provider and model, and run. Each result card labels the Requested provider/model you picked and the Served provider/model the host actually answered with — a host alias may serve a different model than requested, so both are always shown separately. Cancel stops waiting for a run, Clear wipes prompt and result state from the pane.
 

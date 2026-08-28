@@ -103,6 +103,7 @@ def test_all_member_paths_are_safe_relative(tmp_path):
         ".hermes.md",
         "PRD.md",
         ".env.example",
+        "cover.png",
         "docs/BUILDLOG.md",
         "docs/taskchecklist.json",
     ],
