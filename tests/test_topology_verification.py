@@ -168,6 +168,7 @@ def test_route_inventory_lists_only_scoped_lab_routes():
     assert ("GET /health" in shapes)
     assert ("GET /models" in shapes)
     assert ("POST /complete" in shapes)
+    assert ("POST /cancel" in shapes)
 
 
 def test_bare_router_health_payload_works_without_auth():

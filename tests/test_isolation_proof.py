@@ -338,7 +338,7 @@ def test_completion_request_schema_has_no_dangerous_fields():
         for name in field_names
         if re.search(r"path|file|tool|code|exec|shell|cmd|command", name)
     }
-    assert field_names == {"prompt", "provider", "model"}
+    assert field_names == {"prompt", "provider", "model", "run_id"}
     assert not dangerous
 
 

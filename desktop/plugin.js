@@ -34,8 +34,14 @@ function isRateLimitError(error) {
   return status === 429
 }
 
+function createRunId() {
+  const randomUuid = globalThis.crypto?.randomUUID
+  if (typeof randomUuid === 'function') return randomUuid.call(globalThis.crypto)
+  return `model-lab-${Date.now().toString(36)}-${Math.random().toString(16).slice(2)}`
+}
+
 function ModelLabPane({ callbacks }) {
-  const { loadHealth, loadModels, completePrompt } = callbacks
+  const { loadHealth, loadModels, completePrompt, cancelPrompt } = callbacks
   const [health, setHealth] = useState({ state: 'checking' })
   const [prompt, setPrompt] = useState('')
   const [run, setRun] = useState({ state: 'idle', result: null })
@@ -84,15 +90,17 @@ function ModelLabPane({ callbacks }) {
         : 'Checking backend'
 
   const running = run.state === 'running'
-  const canRun = !running && prompt.trim().length > 0
+  const cancelling = run.state === 'cancelling'
+  const inFlight = running || cancelling
+  const canRun = !inFlight && prompt.trim().length > 0
   const onRun = () => {
     if (!canRun) return
-    // Generation guard: a monotonically increasing run id makes late
+    // Generation guard: a unique run id makes late
     // responses from a cancelled or cleared run inert, like an
     // AbortController signal checked before applying state.
-    const runId = Symbol('run')
+    const runId = createRunId()
     setRun({ state: 'running', result: null, runId })
-    const body = { prompt: prompt.trim() }
+    const body = { prompt: prompt.trim(), run_id: runId }
     if (selection.provider && selection.model) {
       body.provider = selection.provider
       body.model = selection.model
@@ -100,27 +108,51 @@ function ModelLabPane({ callbacks }) {
     completePrompt(body)
       .then(result => {
         setRun(current =>
-          current.runId === runId ? { state: 'success', result } : current
+          current.runId === runId && current.state === 'running'
+            ? { state: 'success', result }
+            : current
         )
       })
       .catch(error => {
         setRun(current => {
-          if (current.runId !== runId) return current
+          if (current.runId !== runId || current.state !== 'running') return current
           return {
             state: isRateLimitError(error) ? 'rate_limited' : 'error',
             result: null
           }
         })
       })
+      .finally(() => {
+        setRun(current =>
+          current.runId === runId && current.state === 'cancelling'
+            ? { state: 'idle', result: null }
+            : current
+        )
+      })
+  }
+
+  const requestCancel = runId => {
+    setRun({ state: 'cancelling', result: null, runId })
+    cancelPrompt({ run_id: runId })
+      .then(result => {
+        if (!result?.cancelled) return
+        setRun(current =>
+          current.runId === runId && current.state === 'cancelling'
+            ? { state: 'idle', result: null }
+            : current
+        )
+      })
+      .catch(() => {})
   }
 
   const onCancel = () => {
-    if (running) setRun({ state: 'idle', result: null })
+    if (running) requestCancel(run.runId)
   }
 
   const onClear = () => {
     setPrompt('')
-    setRun({ state: 'idle', result: null })
+    if (running) requestCancel(run.runId)
+    else if (!cancelling) setRun({ state: 'idle', result: null })
     setSelection({
       provider: catalog?.active?.provider || '',
       model: catalog?.active?.model || ''
@@ -244,6 +276,12 @@ function ModelLabPane({ callbacks }) {
             children: 'Running'
           })
         : null,
+      cancelling
+        ? jsx('div', {
+            className: 'text-xs text-(--ui-text-tertiary)',
+            children: 'Cancelling'
+          })
+        : null,
       run.state === 'error'
         ? jsx('div', {
             className:
@@ -339,6 +377,11 @@ export default {
           method: 'POST',
           body,
           timeoutMs: REQUEST_TIMEOUT_MS
+        }),
+      cancelPrompt: body =>
+        ctx.rest('/cancel', {
+          method: 'POST',
+          body
         })
     }
     ctx.register({

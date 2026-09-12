@@ -81,6 +81,7 @@ const plugin = module.namespace.default
 const contributions = []
 const restCalls = []
 let pendingRest = null
+const pendingRests = []
 plugin.register({
   register(contribution) {
     contributions.push(contribution)
@@ -92,7 +93,8 @@ plugin.register({
       return Promise.resolve({ ok: true, plugin: 'hermes-model-lab', version: '0.1.0' })
     }
     return new Promise((resolve, reject) => {
-      pendingRest = { resolve, reject }
+      pendingRest = { path, resolve, reject }
+      pendingRests.push(pendingRest)
     })
   }
 })
@@ -196,8 +198,10 @@ const completeCalls = restCalls.filter(call => call.path === '/complete')
 assert.equal(completeCalls.length, 1, 'expected exactly one /complete call')
 const request = completeCalls[0]
 assert.equal(request.options.method, 'POST')
-assert.deepEqual(Object.keys(request.options.body), ['prompt'])
+assert.deepEqual(Object.keys(request.options.body).sort(), ['prompt', 'run_id'])
 assert.equal(request.options.body.prompt, 'Reply exactly MODEL_LAB_T004_OK')
+assert.equal(typeof request.options.body.run_id, 'string')
+assert.ok(request.options.body.run_id.length >= 16)
 assert.equal(request.options.timeoutMs, 70000)
 assert.equal(textOf(tree).includes('Running'), true, 'loading state must be visible')
 const cancelButton = buttonByText(tree, 'Cancel')
@@ -208,18 +212,21 @@ assert.equal(
   'only one active request: Run stays disabled while running'
 )
 
-// Cancel: waiting stops, the late response is discarded, no repaint with results.
+// Cancel: the backend receives the matching run id. Run stays blocked until
+// cancellation is acknowledged, so a second paid request cannot overlap.
+const firstCompletion = pendingRest
 cancelButton.props.onClick()
 tree = renderPane()
-assert.equal(textOf(tree).includes('Running'), false, 'cancel must stop the loading state')
-pendingRest.resolve({
-  text: 'LATE_RESPONSE',
-  provider: 'test-provider',
-  model: 'test-model'
-})
+const cancelCall = restCalls.filter(call => call.path === '/cancel').pop()
+assert.ok(cancelCall, 'Cancel must call the backend cancellation route')
+assert.equal(cancelCall.options.method, 'POST')
+assert.equal(cancelCall.options.body.run_id, request.options.body.run_id)
+assert.equal(buttonByText(tree, 'Run').props.disabled, true)
+assert.equal(textOf(tree).includes('Cancelling'), true)
+pendingRest.resolve({ cancelled: true })
+firstCompletion.reject(Object.assign(new Error('cancelled'), { statusCode: 409 }))
 await flush()
 tree = renderPane()
-assert.equal(textOf(tree).includes('LATE_RESPONSE'), false, 'late response after cancel must be discarded')
 assert.equal(textOf(tree).includes('Something went wrong'), false, 'cancel must not surface an error')
 
 // Second run succeeds: response text plus provider/model render.
@@ -402,7 +409,7 @@ tree = renderPane()
 const selCall = restCalls.filter(call => call.path === '/complete').pop()
 assert.deepEqual(
   Object.keys(selCall.options.body).sort(),
-  ['model', 'prompt', 'provider'],
+  ['model', 'prompt', 'provider', 'run_id'],
   'selection rides along with the completion request'
 )
 assert.equal(selCall.options.body.provider, 'openrouter')

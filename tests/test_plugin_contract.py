@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 import yaml
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 
@@ -286,6 +286,65 @@ def test_completion_cancellation_reaches_model_call(monkeypatch):
         with pytest.raises(asyncio.CancelledError):
             await task
         assert cancelled.is_set()
+
+    asyncio.run(scenario())
+
+
+def test_cancel_route_stops_the_matching_model_call(monkeypatch):
+    module = _load_backend_module("cancel_route")
+
+    async def scenario():
+        started = asyncio.Event()
+        cancelled = asyncio.Event()
+
+        class FakeLlm:
+            async def acomplete(self, messages, **kwargs):
+                started.set()
+                try:
+                    await asyncio.Event().wait()
+                except asyncio.CancelledError:
+                    cancelled.set()
+                    raise
+
+        monkeypatch.setattr(module, "_llm", FakeLlm())
+        run_id = "model-lab-test-cancel-0001"
+        completion = asyncio.create_task(
+            module.complete(module.CompletionRequest(prompt="hello", run_id=run_id))
+        )
+        await asyncio.wait_for(started.wait(), timeout=1.0)
+
+        response = await module.cancel(module.CancelRequest(run_id=run_id))
+
+        assert response == {"cancelled": True}
+        with pytest.raises(HTTPException) as exc_info:
+            await completion
+        assert exc_info.value.status_code == 409
+        assert cancelled.is_set()
+
+    asyncio.run(scenario())
+
+
+def test_cancel_arriving_before_completion_prevents_model_call(monkeypatch):
+    module = _load_backend_module("cancel_before_start")
+    calls = 0
+
+    class FakeLlm:
+        async def acomplete(self, messages, **kwargs):
+            nonlocal calls
+            calls += 1
+            return _fake_completion()
+
+    async def scenario():
+        monkeypatch.setattr(module, "_llm", FakeLlm())
+        run_id = "model-lab-test-cancel-race-0001"
+
+        response = await module.cancel(module.CancelRequest(run_id=run_id))
+
+        assert response == {"cancelled": True}
+        with pytest.raises(HTTPException) as exc_info:
+            await module.complete(module.CompletionRequest(prompt="hello", run_id=run_id))
+        assert exc_info.value.status_code == 409
+        assert calls == 0
 
     asyncio.run(scenario())
 

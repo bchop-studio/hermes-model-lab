@@ -3,9 +3,10 @@
 import asyncio
 import logging
 import time
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from hermes_cli.inventory import (
     build_model_options_payload,
@@ -19,6 +20,8 @@ PLUGIN_VERSION = "0.1.0"
 MAX_PROMPT_CHARS = 20_000
 MAX_OUTPUT_TOKENS = 512
 MODEL_TIMEOUT_SECONDS = 60.0
+CANCEL_RACE_TTL_SECONDS = 120.0
+MAX_PENDING_CANCELLATIONS = 256
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +32,18 @@ class CompletionRequest(BaseModel):
     prompt: str
     provider: str | None = None
     model: str | None = None
+    run_id: str = Field(
+        default_factory=lambda: uuid4().hex,
+        min_length=16,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9._:-]+$",
+    )
+
+
+class CancelRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str = Field(min_length=16, max_length=128, pattern=r"^[A-Za-z0-9._:-]+$")
 
 
 def _create_llm():
@@ -129,6 +144,17 @@ def _validate_selection(provider: str | None, model: str | None) -> None:
 
 router = APIRouter()
 _llm = _create_llm()
+_active_runs: dict[str, asyncio.Task] = {}
+_pending_cancellations: dict[str, float] = {}
+
+
+def _prune_pending_cancellations() -> None:
+    cutoff = time.monotonic() - CANCEL_RACE_TTL_SECONDS
+    expired = [run_id for run_id, seen_at in _pending_cancellations.items() if seen_at < cutoff]
+    for run_id in expired:
+        _pending_cancellations.pop(run_id, None)
+    while len(_pending_cancellations) >= MAX_PENDING_CANCELLATIONS:
+        _pending_cancellations.pop(next(iter(_pending_cancellations)))
 
 
 @router.get("/health")
@@ -196,17 +222,29 @@ async def complete(request: CompletionRequest) -> dict:
     if request.provider is not None and request.model is not None:
         call_kwargs["provider"] = request.provider
         call_kwargs["model"] = request.model
+    _prune_pending_cancellations()
+    if _pending_cancellations.pop(request.run_id, None) is not None:
+        raise HTTPException(status_code=409, detail="Model request cancelled.")
+    if request.run_id in _active_runs:
+        raise HTTPException(status_code=409, detail="That model run is already active.")
+    model_task = asyncio.create_task(
+        _llm.acomplete(
+            [{"role": "user", "content": prompt}],
+            **call_kwargs,
+        )
+    )
+    _active_runs[request.run_id] = model_task
     started = time.monotonic()
     try:
         result = await asyncio.wait_for(
-            _llm.acomplete(
-                [{"role": "user", "content": prompt}],
-                **call_kwargs,
-            ),
+            model_task,
             timeout=MODEL_TIMEOUT_SECONDS + 5.0,
         )
     except asyncio.CancelledError:
-        raise
+        current_task = asyncio.current_task()
+        if current_task is not None and current_task.cancelling():
+            raise
+        raise HTTPException(status_code=409, detail="Model request cancelled.") from None
     except TimeoutError:
         raise HTTPException(
             status_code=504, detail="Model request timed out."
@@ -236,6 +274,8 @@ async def complete(request: CompletionRequest) -> dict:
         raise HTTPException(status_code=502, detail="Model request failed.") from None
     finally:
         elapsed_ms = int((time.monotonic() - started) * 1000)
+        if _active_runs.get(request.run_id) is model_task:
+            _active_runs.pop(request.run_id, None)
     return {
         "state": "complete",
         "text": result.text,
@@ -249,3 +289,14 @@ async def complete(request: CompletionRequest) -> dict:
         "elapsed_ms": elapsed_ms,
         "usage": _serialize_usage(result.usage),
     }
+
+
+@router.post("/cancel")
+async def cancel(request: CancelRequest) -> dict:
+    task = _active_runs.get(request.run_id)
+    if task is None or task.done():
+        _prune_pending_cancellations()
+        _pending_cancellations[request.run_id] = time.monotonic()
+        return {"cancelled": True}
+    task.cancel()
+    return {"cancelled": True}

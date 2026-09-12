@@ -47,7 +47,12 @@ PLUGIN_ID = "hermes-model-lab"
 DESKTOP_ENTRY_NAME = "plugin.js"
 
 # Route inventory every installed backend must expose (method, path).
-REQUIRED_ROUTES = {("GET", "/health"), ("GET", "/models"), ("POST", "/complete")}
+REQUIRED_ROUTES = {
+    ("GET", "/health"),
+    ("GET", "/models"),
+    ("POST", "/complete"),
+    ("POST", "/cancel"),
+}
 
 BRIDGE_PORT = 9119
 

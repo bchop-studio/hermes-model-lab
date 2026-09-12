@@ -29,7 +29,7 @@ The first release is a model lab, not a general security sandbox. It makes one b
 
 ## Status
 
-The stateless model path is validated from the Hermes Desktop pane through the bounded backend. A real Electron QA run sent a prompt, rendered the answer and model identity, blocked duplicate runs, discarded a late response after Cancel, cleared prompt and result state, and enabled and disabled the plugin cleanly. Provider and model selection is now validated end to end at the contract level: the pane lists only configured providers and models from a sanitized host inventory projection, picks are fail-closed against that inventory before any model call, and the Hermes active model plus all credentials stay untouched.
+The stateless model path is validated from the Hermes Desktop pane through the bounded backend. A real Electron QA run sent a prompt, rendered the answer and model identity, blocked duplicate runs, cleared prompt and result state, and enabled and disabled the plugin cleanly. Cancel now stops the matching backend model task instead of only hiding its eventual result, and the pane keeps Run blocked until cancellation is acknowledged. Provider and model selection is validated end to end at the contract level: the pane lists only configured providers and models from a sanitized host inventory projection, picks are fail-closed against that inventory before any model call, and the Hermes active model plus all credentials stay untouched.
 
 Response facts are shown without guessing: each result card reports the completion state, the requested provider and model (the caller's explicit selection, labeled Requested), and the authoritative served provider and model returned by the host (labeled Served). A host alias may serve a different model than requested; both identities are always labeled explicitly and the served identity is never called selected. The card also reports measured elapsed time, and token usage exactly as reported. When a provider returns no usage (or only an empty placeholder), the card shows Unavailable rather than zeros, and cost appears only when the host returns a real number. Rate-limited runs get their own fixed message, detected from status metadata only; all provider error details stay out of the renderer.
 
@@ -67,7 +67,7 @@ Install the Desktop half (Windows): copy the same folder's contents to `%LOCALAP
 
 Do not overwrite an existing installation. Copy into empty target folders only, and remove an older Model Lab installation before installing this release.
 
-Use: open Hermes Desktop, enable Model Lab, type one prompt, pick an allowed provider and model, and run. Each result card labels the Requested provider/model you picked and the Served provider/model the host actually answered with — a host alias may serve a different model than requested, so both are always shown separately. Cancel stops waiting for a run, Clear wipes prompt and result state from the pane.
+Use: open Hermes Desktop, enable Model Lab, type one prompt, pick an allowed provider and model, and run. Each result card labels the Requested provider/model you picked and the Served provider/model the host actually answered with — a host alias may serve a different model than requested, so both are always shown separately. Cancel asks the backend to cancel the matching model task, and Clear wipes prompt and result state from the pane.
 
 Uninstall: remove the two installed folders listed above and remove `hermes-model-lab` from `plugins.enabled`. Other enabled plugins and unrelated config keys are left untouched.
 
