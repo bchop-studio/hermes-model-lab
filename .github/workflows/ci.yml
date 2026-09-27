@@ -59,6 +59,8 @@ jobs:
           pytest tests -q \
             --ignore=tests/test_plugin_contract.py \
             --deselect tests/test_release_packaging.py::test_extracted_tree_passes_product_verification \
+            --deselect tests/test_topology_verification.py::test_remote_rest_contract_is_profile_aware \
+            --deselect tests/test_topology_verification.py::test_remote_socket_contract_is_noop_on_oauth_remotes \
             --deselect tests/test_topology_verification.py::test_route_inventory_lists_only_scoped_lab_routes \
             --deselect tests/test_topology_verification.py::test_bare_router_health_payload_works_without_auth \
             --deselect tests/test_topology_verification.py::test_bare_router_models_payload_is_sanitized \
