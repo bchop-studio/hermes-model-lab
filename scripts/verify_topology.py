@@ -78,7 +78,9 @@ def _hash_file(path: Path) -> str:
 # "artifacts" covers prior local release outputs (artifacts/build-*), so a
 # build run against an already-populated tree can never embed its own or
 # older archives; this replaces the builder's old single-archive exclusion.
-NON_SHIPPED_DIRS = {"artifacts", ".git", "__pycache__", ".pytest_cache", ".ruff_cache", "node_modules", ".venv", ".dfg", "spikes"}
+# ".github" keeps continuous-integration workflows in the repository only,
+# and both virtualenv spellings stay out so a dev environment never ships.
+NON_SHIPPED_DIRS = {"artifacts", ".git", "__pycache__", ".pytest_cache", ".ruff_cache", "node_modules", ".venv", "venv", ".dfg", "spikes", ".github"}
 
 # Repository-only and internal local files excluded from the installable
 # package set (copy, parity, install plan, uninstall plan).
@@ -91,6 +93,7 @@ NON_SHIPPED_FILES = {
     "cover.png",
     "docs/BUILDLOG.md",
     "docs/taskchecklist.json",
+    "requirements-dev.txt",
 }
 
 

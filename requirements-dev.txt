@@ -1,0 +1,16 @@
+# Development and CI dependencies for Hermes Model Lab.
+#
+# Pinned to the exact versions used for local verification, so a hosted check
+# runs what a maintainer runs. Install with:
+#
+#     python -m pip install -r requirements-dev.txt
+#
+# The host itself is deliberately NOT listed here. The backend imports the
+# host's own `hermes_cli` package, and the published `hermes-agent` releases on
+# PyPI are older than the plugin API this backend uses. Tests that need the
+# host therefore run against a local Hermes install, not from this file.
+fastapi==0.133.1
+httpx==0.28.1
+pytest==9.1.1
+PyYAML==6.0.3
+ruff==0.15.0
