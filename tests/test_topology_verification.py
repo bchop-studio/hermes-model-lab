@@ -250,6 +250,8 @@ def test_shippable_predicate_excludes_all_internal_local_files(tmp_path):
         ".dfg/receipt.json", "spikes/try.py", ".git/config",
         "__pycache__/x.pyc", "node_modules/pkg/index.js",
         ".venv/bin/python", ".pytest_cache/v/cache",
+        "requirements-dev.txt", ".github/workflows/ci.yml",
+        "venv/bin/python", "venv/lib/python3.11/site-packages/pkg.py",
     ]
     for rel in internal:
         path = src / rel

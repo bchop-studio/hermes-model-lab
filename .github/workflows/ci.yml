@@ -1,0 +1,75 @@
+# Hermetic quality gate for Hermes Model Lab.
+#
+# A hosted runner has no Hermes install, and this project's backend imports the
+# host's own `hermes_cli` package. This workflow therefore runs only the checks
+# that need no host process: lint, the hermetic part of the Python suite, the
+# Desktop entry syntax check, and the Desktop plugin contract.
+#
+# Checks that need a real host (the backend route contract, Plugin Doctor, and
+# the live topology proof) are excluded by explicit --deselect entries below
+# and run from a machine with Hermes installed. See CONTRIBUTING.md.
+#
+# Every action is pinned to an immutable commit SHA; the release tag is kept in
+# a trailing comment for review.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11.15"
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "26.7.0"
+          package-manager-cache: false
+
+      - name: Install development requirements
+        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check __init__.py dashboard/plugin_api.py scripts tests
+
+      - name: Python tests without a host install
+        run: |
+          pytest tests -q \
+            --ignore=tests/test_plugin_contract.py \
+            --deselect tests/test_release_packaging.py::test_extracted_tree_passes_product_verification \
+            --deselect tests/test_topology_verification.py::test_remote_rest_contract_is_profile_aware \
+            --deselect tests/test_topology_verification.py::test_remote_socket_contract_is_noop_on_oauth_remotes \
+            --deselect tests/test_topology_verification.py::test_route_inventory_lists_only_scoped_lab_routes \
+            --deselect tests/test_topology_verification.py::test_bare_router_health_payload_works_without_auth \
+            --deselect tests/test_topology_verification.py::test_bare_router_models_payload_is_sanitized \
+            --deselect tests/test_topology_verification.py::test_sanitized_models_proof_is_real_boolean_in_full_receipt \
+            --deselect tests/test_topology_verification.py::test_verdict_requires_live_bridge_checks_but_not_mount_proof \
+            --deselect tests/test_topology_verification.py::test_full_run_reports_clean_receipt_and_cleans_up
+
+      - name: Desktop entry syntax
+        run: node --check desktop/plugin.js
+
+      - name: Desktop plugin contract
+        run: node --experimental-vm-modules tests/desktop_plugin_contract.mjs

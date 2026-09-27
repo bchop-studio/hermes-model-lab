@@ -106,6 +106,9 @@ def test_all_member_paths_are_safe_relative(tmp_path):
         "cover.png",
         "docs/BUILDLOG.md",
         "docs/taskchecklist.json",
+        "requirements-dev.txt",
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml",
     ],
 )
 def test_internal_files_never_ship(tmp_path, internal):
@@ -118,7 +121,8 @@ def test_no_internal_directories_or_caches_ship(tmp_path):
     out = br.build_archive(ROOT, tmp_path)
     names = _member_paths(out["archive"])
     banned = {"__pycache__", ".git", ".dfg", "spikes", ".pytest_cache",
-              ".ruff_cache", "node_modules", ".venv", "venv", ".gitignore"}
+              ".ruff_cache", "node_modules", ".venv", "venv", ".gitignore",
+              ".github"}
     for name in names:
         parts = {part.lower() for part in Path(name).parts}
         assert not (parts & banned), name
