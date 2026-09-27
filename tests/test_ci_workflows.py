@@ -96,3 +96,17 @@ def test_codeql_scans_the_shipped_languages():
     languages = {entry["language"] for entry in matrix}
     assert languages == {"python", "javascript-typescript"}
     assert {entry["build-mode"] for entry in matrix} == {"none"}
+
+
+def test_dependabot_checks_python_and_github_actions_weekly():
+    path = ROOT / ".github" / "dependabot.yml"
+    assert path.is_file()
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert data["version"] == 2
+    updates = data["updates"]
+    assert {entry["package-ecosystem"] for entry in updates} == {
+        "github-actions",
+        "pip",
+    }
+    assert all(entry["directory"] == "/" for entry in updates)
+    assert all(entry["schedule"] == {"interval": "weekly"} for entry in updates)
