@@ -107,6 +107,7 @@ def test_all_member_paths_are_safe_relative(tmp_path):
         "docs/BUILDLOG.md",
         "docs/taskchecklist.json",
         "requirements-dev.txt",
+        "ruff.toml",
         ".github/workflows/ci.yml",
         ".github/workflows/codeql.yml",
     ],
