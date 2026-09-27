@@ -94,6 +94,7 @@ NON_SHIPPED_FILES = {
     "docs/BUILDLOG.md",
     "docs/taskchecklist.json",
     "requirements-dev.txt",
+    "ruff.toml",
 }
 
 

@@ -11,6 +11,7 @@ review:
 """
 
 import re
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -69,6 +70,14 @@ def test_ci_runs_the_repository_check_commands():
     assert "node --check desktop/plugin.js" in text
     assert "node --experimental-vm-modules tests/desktop_plugin_contract.mjs" in text
     assert "pip install --disable-pip-version-check -r requirements-dev.txt" in text
+
+
+def test_ruff_rules_are_explicit_and_stable():
+    """A Ruff upgrade must not silently replace the repository's lint policy."""
+    path = ROOT / "ruff.toml"
+    assert path.is_file()
+    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    assert data["lint"]["select"] == ["E4", "E7", "E9", "F"]
 
 
 def test_ci_pytest_targets_exist_on_disk():

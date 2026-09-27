@@ -1,0 +1,5 @@
+# Keep the repository's established Ruff 0.15 lint policy explicit.
+# Ruff 0.16 expanded its implicit defaults, so relying on defaults would make
+# dependency updates silently change which checks block CI.
+[lint]
+select = ["E4", "E7", "E9", "F"]
