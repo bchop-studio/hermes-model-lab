@@ -107,15 +107,28 @@ def test_codeql_scans_the_shipped_languages():
     assert {entry["build-mode"] for entry in matrix} == {"none"}
 
 
-def test_dependabot_checks_python_and_github_actions_weekly():
+def test_dependabot_groups_python_and_github_actions_weekly():
     path = ROOT / ".github" / "dependabot.yml"
     assert path.is_file()
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert data["version"] == 2
+    assert data["multi-ecosystem-groups"] == {
+        "weekly-dependencies": {
+            "schedule": {
+                "interval": "weekly",
+                "day": "monday",
+                "time": "10:00",
+                "timezone": "America/New_York",
+            }
+        }
+    }
     updates = data["updates"]
     assert {entry["package-ecosystem"] for entry in updates} == {
         "github-actions",
         "pip",
     }
     assert all(entry["directory"] == "/" for entry in updates)
-    assert all(entry["schedule"] == {"interval": "weekly"} for entry in updates)
+    assert all(entry["patterns"] == ["*"] for entry in updates)
+    assert all(
+        entry["multi-ecosystem-group"] == "weekly-dependencies" for entry in updates
+    )
