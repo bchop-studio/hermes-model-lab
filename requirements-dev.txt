@@ -9,8 +9,8 @@
 # host's own `hermes_cli` package, and the published `hermes-agent` releases on
 # PyPI are older than the plugin API this backend uses. Tests that need the
 # host therefore run against a local Hermes install, not from this file.
-fastapi==0.143.0
+fastapi==0.162.0
 httpx==0.28.1
-pytest==9.1.1
+pytest==9.2.0
 PyYAML==6.0.3
-ruff==0.17.0
+ruff==0.17.4
